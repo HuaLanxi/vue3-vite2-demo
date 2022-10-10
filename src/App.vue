@@ -6,83 +6,184 @@
     </div>
     <!-- query -->
     <div class="query-box">
-      <el-input v-model="queryInput" placeholder="请输入姓名搜索"/>
-      <el-button type="primary">添加</el-button>
+      <el-input class="query-input" v-model="queryInput" placeholder="请输入姓名搜索"/>
+      <div class="btn-list">
+        <el-button type="primary" @click="handleAdd">添加</el-button>
+        <el-button type="danger" @click="handleDeleteList" v-if="multipleSelection.length > 0">删除选中</el-button>
+      </div>
     </div>
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
-      <el-table-column fixed prop="date" label="Date" width="150"/>
-      <el-table-column prop="name" label="Name" width="120"/>
-      <el-table-column prop="state" label="State" width="120"/>
-      <el-table-column prop="city" label="City" width="120"/>
-      <el-table-column prop="address" label="Address" width="600"/>
-      <el-table-column prop="zip" label="Zip" width="120"/>
-      <el-table-column fixed='right'  label="Operations" width="120">
-        <template #default>
-          <el-button link type="primary" size="small" @click="handleRowClick">Detail</el-button>
-          <el-button link type="primary" size="small">Edit</el-button>
+    <el-table ref="multipleTableRef"
+              :data="tableData"
+              style="width: 100%"
+              @selection-change="handleSelectionChange"
+              border>
+      <el-table-column type="selection" width="55"/>
+      <el-table-column prop="name" label="姓名" width="120"/>
+      <el-table-column prop="email" label="邮箱" width="120"/>
+      <el-table-column prop="phone" label="手机" width="120"/>
+      <el-table-column prop="state" label="状态" width="120"/>
+      <el-table-column prop="address" label="地址" width="200"/>
+      <el-table-column fixed="right" label="操作" width="120">
+        <template #default="scope">
+          <el-button link type="primary" size="small" @click.prevent="handleDeleteRow(scope.$index)"
+          style="color: #F56C6C">删除</el-button>
+          <el-button link type="primary" size="small">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
+    <!-- dialog -->
+    <el-dialog v-model="dialogFormVisible" :title="dialogType === 'add' ? '添加' : '编辑'">
+      <el-form :model="tableForm">
+        <el-form-item label="姓名" :label-width="100">
+          <el-input v-model="tableForm.name" autocomplete="off" />
+        </el-form-item>
+        <el-form-item label="邮箱" :label-width="100">
+          <el-input v-model="tableForm.email" autocomplete="off" />
+        </el-form-item>
+        <el-form-item label="手机" :label-width="100">
+          <el-input v-model="tableForm.phone" autocomplete="off" />
+        </el-form-item>
+        <el-form-item label="状态" :label-width="100">
+          <el-input v-model="tableForm.status" autocomplete="off" />
+        </el-form-item>
+        <el-form-item label="地址" :label-width="100">
+          <el-input v-model="tableForm.address" autocomplete="off" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+      <span class="dialog-footer">
+        <el-button type="primary" @click="handleConform">确认</el-button>
+      </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import {ref} from 'vue';
 
-/* 数据 */
+/*** 数据 ***/
+interface User {
+  id: string
+  name: string
+  email: string
+  phone: string
+  status: string
+  address: string
+}
+
 let queryInput = ref("");
 let tableData = ref([
   {
-    date: '2016-05-03',
-    name: 'Tom',
-    state: 'California',
-    city: 'Los Angeles',
+    id: '1',
+    name: 'Tom1',
+    email: '123@qq.com',
+    phone: '123123123',
+    status: 'California',
     address: 'No. 189, Grove St, Los Angeles',
-    zip: 'CA 90036',
-    tag: 'Home',
   },
   {
-    date: '2016-05-02',
-    name: 'Tom',
-    state: 'California',
-    city: 'Los Angeles',
+    id: '2',
+    name: 'Tom2',
+    email: '123@qq.com',
+    phone: '123123123',
+    status: 'California',
     address: 'No. 189, Grove St, Los Angeles',
-    zip: 'CA 90036',
-    tag: 'Office',
   },
   {
-    date: '2016-05-04',
-    name: 'Tom',
-    state: 'California',
-    city: 'Los Angeles',
+    id: '3',
+    name: 'Tom3',
+    email: '123@qq.com',
+    phone: '123123123',
+    status: 'California',
     address: 'No. 189, Grove St, Los Angeles',
-    zip: 'CA 90036',
-    tag: 'Home',
   },
   {
-    date: '2016-05-01',
-    name: 'Tom',
-    state: 'California',
-    city: 'Los Angeles',
+    id: '4',
+    name: 'Tom4',
+    email: '123@qq.com',
+    phone: '123123123',
+    status: 'California',
     address: 'No. 189, Grove St, Los Angeles',
-    zip: 'CA 90036',
-    tag: 'Office',
   },
 ]);
+let multipleSelection = ref<string[]>([]);
+let dialogFormVisible = ref(false);
+let tableForm = ref({
+  name: '',
+  email: '',
+  phone: '',
+  status: '',
+  address: '',
+});
+let dialogType = 'add';
 
-/* 响应函数 */
-const handleRowClick = () => {
-  console.log('click');
+/*** 响应函数 ***/
+/* 删除多行 */
+const handleDeleteList = () => {
+  multipleSelection.value.sort();
+  const length = multipleSelection.value.length;
+  for (let i = length - 1; i >= 0; i--) {
+    let index = multipleSelection.value[i];
+    handleDeleteRow(index);
+  }
+  multipleSelection.value = [];
+}
+/* 删除一行 */
+const handleDeleteRow = (index: string) => {
+  tableData.value.splice(Number(index), 1);
+}
+
+/* 选中多行 */
+const handleSelectionChange = (val: User[]) => {
+  multipleSelection.value = [];
+  val.forEach(item => {
+    let index = tableData.value.findIndex(user => user.id === item.id);
+    multipleSelection.value.push(String(index));
+  });
+  console.log(multipleSelection.value);
+}
+
+/* 添加一行 */
+const handleAdd = () => {
+  dialogFormVisible.value = true;
+  tableForm.value = {
+    name: '',
+    email: '',
+    phone: '',
+    status: '',
+    address: '',
+  };
+}
+
+/* 确认添加 */
+const handleConform = () => {
+  dialogFormVisible.value = false;
+  tableData.value.push({
+    id: (tableData.value.length + 1).toString(),
+    ...tableForm.value
+  });
 }
 </script>
 
 <style scoped>
 .table-box {
-  width: 1000px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  width: 855px;
+  margin: 200px auto;
+}
+
+.title {
+  text-align: center;
+}
+
+.query-box {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.query-input {
+  width: 200px;
 }
 </style>
