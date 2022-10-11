@@ -22,7 +22,7 @@
       <el-table-column prop="name" label="姓名" width="120"/>
       <el-table-column prop="email" label="邮箱" width="120"/>
       <el-table-column prop="phone" label="手机" width="120"/>
-      <el-table-column prop="state" label="状态" width="120"/>
+      <el-table-column prop="status" label="状态" width="120"/>
       <el-table-column prop="address" label="地址" width="200"/>
       <el-table-column fixed="right" label="操作" width="120">
         <template #default="scope">
