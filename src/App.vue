@@ -6,9 +6,9 @@
     </div>
     <!-- query -->
     <div class="query-box">
-      <el-input class="query-input" v-model="queryInput" placeholder="请输入姓名搜索"/>
+      <el-input class="query-input" v-model="queryInput" placeholder="请输入姓名搜索" @input="handleQueryInput"/>
       <div class="btn-list">
-        <el-button type="primary" @click="handleAdd">添加</el-button>
+        <el-button type="primary" @click="handleTableAdd">添加</el-button>
         <el-button type="danger" @click="handleDeleteList" v-if="multipleSelection.length > 0">删除选中</el-button>
       </div>
     </div>
@@ -27,33 +27,34 @@
       <el-table-column fixed="right" label="操作" width="120">
         <template #default="scope">
           <el-button link type="primary" size="small" @click.prevent="handleDeleteRow(scope.$index)"
-          style="color: #F56C6C">删除</el-button>
-          <el-button link type="primary" size="small">编辑</el-button>
+                     style="color: #F56C6C">删除
+          </el-button>
+          <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
     <!-- dialog -->
-    <el-dialog v-model="dialogFormVisible" :title="dialogType === 'add' ? '添加' : '编辑'">
+    <el-dialog v-model="dialogFormVisible" :title="dialogType">
       <el-form :model="tableForm">
         <el-form-item label="姓名" :label-width="100">
-          <el-input v-model="tableForm.name" autocomplete="off" />
+          <el-input v-model="tableForm.name" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="邮箱" :label-width="100">
-          <el-input v-model="tableForm.email" autocomplete="off" />
+          <el-input v-model="tableForm.email" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="手机" :label-width="100">
-          <el-input v-model="tableForm.phone" autocomplete="off" />
+          <el-input v-model="tableForm.phone" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="状态" :label-width="100">
-          <el-input v-model="tableForm.status" autocomplete="off" />
+          <el-input v-model="tableForm.status" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="地址" :label-width="100">
-          <el-input v-model="tableForm.address" autocomplete="off" />
+          <el-input v-model="tableForm.address" autocomplete="off"/>
         </el-form-item>
       </el-form>
       <template #footer>
       <span class="dialog-footer">
-        <el-button type="primary" @click="handleConform">确认</el-button>
+        <el-button type="primary" @click="handleDialogConform">确认</el-button>
       </span>
       </template>
     </el-dialog>
@@ -65,7 +66,7 @@ import {ref} from 'vue';
 
 /*** 数据 ***/
 interface User {
-  id: string
+  id: number
   name: string
   email: string
   phone: string
@@ -73,10 +74,11 @@ interface User {
   address: string
 }
 
+/* 响应性变量 */
 let queryInput = ref("");
 let tableData = ref([
   {
-    id: '1',
+    id: 1,
     name: 'Tom1',
     email: '123@qq.com',
     phone: '123123123',
@@ -84,7 +86,7 @@ let tableData = ref([
     address: 'No. 189, Grove St, Los Angeles',
   },
   {
-    id: '2',
+    id: 2,
     name: 'Tom2',
     email: '123@qq.com',
     phone: '123123123',
@@ -92,7 +94,7 @@ let tableData = ref([
     address: 'No. 189, Grove St, Los Angeles',
   },
   {
-    id: '3',
+    id: 3,
     name: 'Tom3',
     email: '123@qq.com',
     phone: '123123123',
@@ -100,7 +102,7 @@ let tableData = ref([
     address: 'No. 189, Grove St, Los Angeles',
   },
   {
-    id: '4',
+    id: 4,
     name: 'Tom4',
     email: '123@qq.com',
     phone: '123123123',
@@ -108,19 +110,40 @@ let tableData = ref([
     address: 'No. 189, Grove St, Los Angeles',
   },
 ]);
-let multipleSelection = ref<string[]>([]);
+let multipleSelection = ref<number[]>([]);
 let dialogFormVisible = ref(false);
-let tableForm = ref({
+let tableForm = ref<User>({
+  id: 0,
   name: '',
   email: '',
   phone: '',
   status: '',
-  address: '',
+  address: ''
 });
-let dialogType = 'add';
+let dialogType = ref('');
+
+/* 普通常量 */
+const add = '添加';
+const edit = '编辑';
+
+/* 普通变量 */
+let idCount = 4;
+let tableDataCopy = Object.assign(tableData.value);
 
 /*** 响应函数 ***/
-/* 删除多行 */
+/* 输入框：查群 */
+const handleQueryInput = (val: any) => {
+  val = val.toLowerCase();
+  tableData.value = tableDataCopy.filter((item: { name: string; }) => item.name.toLowerCase().match(val));
+}
+/* 表格：编辑一行 */
+const handleEdit = (row: User) => {
+  dialogFormVisible.value = true;
+  dialogType.value = edit;
+  tableForm.value = {...row};
+}
+
+/* 表格：删除多行 */
 const handleDeleteList = () => {
   multipleSelection.value.sort();
   const length = multipleSelection.value.length;
@@ -130,40 +153,52 @@ const handleDeleteList = () => {
   }
   multipleSelection.value = [];
 }
-/* 删除一行 */
-const handleDeleteRow = (index: string) => {
-  tableData.value.splice(Number(index), 1);
+/* 表格：删除一行 */
+const handleDeleteRow = (index: number) => {
+  tableData.value.splice(index, 1);
 }
 
-/* 选中多行 */
+/* 表格：选中多行 */
 const handleSelectionChange = (val: User[]) => {
   multipleSelection.value = [];
   val.forEach(item => {
     let index = tableData.value.findIndex(user => user.id === item.id);
-    multipleSelection.value.push(String(index));
+    multipleSelection.value.push(index);
   });
   console.log(multipleSelection.value);
 }
 
-/* 添加一行 */
-const handleAdd = () => {
+/* 表格：添加一行 */
+const handleTableAdd = () => {
   dialogFormVisible.value = true;
+  dialogType.value = add;
   tableForm.value = {
+    id: 0,
     name: '',
     email: '',
     phone: '',
     status: '',
-    address: '',
+    address: ''
   };
 }
 
-/* 确认添加 */
-const handleConform = () => {
+/* 对话框：确认 */
+const handleDialogConform = () => {
   dialogFormVisible.value = false;
-  tableData.value.push({
-    id: (tableData.value.length + 1).toString(),
-    ...tableForm.value
-  });
+
+  if (dialogType.value === add) {
+    tableForm.value.id = ++idCount;
+    tableData.value.push({
+      ...tableForm.value
+    });
+    tableDataCopy = Object.assign(tableData.value);
+  }
+
+  if (dialogType.value === edit) {
+    let index = tableData.value.findIndex(row => row.id === tableForm.value.id);
+    tableData.value[index] = tableForm.value;
+    tableDataCopy = Object.assign(tableData.value);
+  }
 }
 </script>
 
